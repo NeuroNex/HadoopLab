@@ -1,0 +1,68 @@
+/*==========================================================
+Toronto User SQL Group - http://toronto.sqlpass.org/
+Session April 2014 - "Discovery of Hadoop Under a Relational Lens Scope"
+
+- Query the "Most polluted cities"
+- Dump results in file and compare with those from the SQL2012 R2 solution
+
+2014-04-17 - Tri Nguyen
+==========================================================*/
+
+--------------------------------------------
+-- Custom JAR to invoke custom Eval UDF for calculating Avg, Min, Max on ARRAY<int>
+-- NOTE1: The path is LOCAL
+-- NOTE2: read comments header in /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/java/tradoop/HiveUtil/IntegerArrayAvg.java
+--        for instructions how to create & deploy the *.jar file
+--------------------------------------------
+ADD JAR ./MyHiveUDF.jar;
+--DELETE JAR ./MyHiveUDF.jar;
+
+CREATE TEMPORARY FUNCTION AvgArrayUDF AS 'HiveUtil.IntegerArrayAvg';
+CREATE TEMPORARY FUNCTION MinArrayUDF AS 'HiveUtil.IntegerArrayMin';
+CREATE TEMPORARY FUNCTION MaxArrayUDF AS 'HiveUtil.IntegerArrayMax';
+--DROP TEMPORARY FUNCTION IF EXISTS AvgArrayUDF;
+
+
+
+/*------------------------------------------------
+The most polluted Cities (by Average Ozone Measurs for the entire year)
+
+MAPJOIN:
+   If one table is small enough to fit in memory, Hive can load the
+   smaller table into memory to resolve the join in each of the mappers
+   (instead of doing it in the reducers)
+
+NOTE: Hive is smart enough to detect the table size and can make itself the MAPJOIN hint
+
+ATTENTION: Hive 0.13 BUG! Max(double) returns NaN if at least 1 number is null
+           Workaround, so we do Max(int) instead!
+------------------------------------------------*/
+
+SET hive.cli.print.header=true;
+
+-- The syntax for specifying a MAPJOIN is a hint embedded in an SQL C-style comment:
+-- DROP TABLE IF EXISTS OzoneByCitiesResults;
+CREATE TABLE OzoneByCitiesResults
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t'
+COLLECTION ITEMS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+AS
+SELECT /*+MAPJOIN(NAPSStation) */  S.ProvinceName, S.City,
+Max(CAST(OZ.AVGCalc AS int)) AS AVGOzoneDayMax
+FROM Ozone2012 OZ
+INNER JOIN NAPSStation S ON S.StationID = OZ.StationID
+GROUP BY S.ProvinceName, S.City
+ORDER BY AVGOzoneDayMax DESC, ProvinceName, City;
+
+SELECT * FROM OzoneByCitiesResults;
+
+
+-- Capture Query Results to Text File
+hive> dfs -ls /apps/hive/warehouse/ozonebycitiesresults/;
+hive> dfs -cat /apps/hive/warehouse/ozonebycitiesresults/000000_0;
+      $ rm -f /root/HadoopExo/Hive/OzoneByCities_Hive.txt
+hive> dfs -copyToLocal /apps/hive/warehouse/ozonebycitiesresults/000000_0 /root/HadoopExo/Hive/OzoneByCities_Hive.txt;
+$ scp root@hdpsbhv:/root/HadoopExo/Hive/OzoneByCities_Hive.txt /home/tri/Documents/HadoopLab/AirQualityAnalysis/Results/
+
+--(end)--

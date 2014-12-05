@@ -1,0 +1,50 @@
+- Parsing a fixed-length file of 10BM, 74065 records
+- Join StationID to Station MetaData to Substitute StationID by Province, CityName
+- Group (Province, CityName), Max(Average Ozone in 2012)
+- Sort Grouping Result by descending values of Ozone
+
+(ORIGINAL DESIGN - April 2014)
+HDPSandbox 2.0: Hadoop 2.20 released in November 2013
+--------------------------------------------------------------------------------------
+                SQL2012 R2          Hive                  Pig           Java MapReduce
+--------------------------------------------------------------------------------------
+Design time       4 h               4 h                   2h            30 hours
+
+Exec Time         6 secs            100 secs              154 secs      49 secs
+
+Xtime slower
+than SQLServer    n/a               x16                   25x           x8
+
+Details           5" SSIS           23" tempOzone2012
+Exec Time         1" SQL Query      20" Ozone2012
+                                    57" Final Results
+
+Machine         Elitebook 8530w     VM HyperV, 6GB        same as Hive  same as Hive
+                P8700 @ 2.5GHz      HDPSandbox 2.0
+                8GB                 Hadoop 2.20
+--------------------------------------------------------------------------------------
+
+
+(UPDATE May 2014, Same code, only the Hadoop client node is changed)
+HDPSandbox 2.1: Hadoop 2.24 released in May 2014
+--------------------------------------------------------------------------------------
+                SQL2012 R2          Hive                  Pig           Java MapReduce
+--------------------------------------------------------------------------------------
+Design time       4 h               4 h                   2h            30 hours
+
+Exec Time         6 secs            138 secs              194 secs      70 secs
+
+Xtime slower
+than SQLServer    n/a               x23                   32x           x11
+
+Details           5" SSIS           30" tempOzone2012
+Exec Time         1" SQL Query      28" Ozone2012
+                                    80" Final Results
+
+Machine         Elitebook 8530w     VM HyperV, 6GB        same as Hive  same as Hive
+                P8700 @ 2.5GHz      HDPSandbox 2.0
+                8GB                 Hadoop 2.20
+--------------------------------------------------------------------------------------
+Details           5" SSIS           30" tempOzone2012
+Exec Time         1" SQL Query      28" Ozone2012
+                                    80" Final Results

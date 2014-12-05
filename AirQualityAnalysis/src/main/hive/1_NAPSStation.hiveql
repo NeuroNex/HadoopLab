@@ -1,0 +1,75 @@
+/*==========================================================
+Toronto User SQL Group - http://toronto.sqlpass.org/
+Session April 2014 - "Discovery of Hadoop Under a Relational Lens Scope"
+
+Parse NAPS Station Metadata, this table will give us the location of the measures via the StationID
+
+Data Preparation:
+   $ scp /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/resources/Stations_v28012014.csv root@hdpsbhv:/root/HadoopExo/
+   # hdfs dfs -mkdir -p /user/Tri/AirAnalysis/NAPSStation/
+   # hdfs dfs -copyFromLocal -f /root/HadoopExo/Stations_v28012014.csv /user/Tri/AirAnalysis/NAPSStation/
+
+2014-04-17 - Tri Nguyen
+==========================================================*/
+
+
+/*--------------------------------------------------------
+  CREATE Table (External)
+  NOTE: the CSV is clean enough, the table can be considered final
+--------------------------------------------------------*/
+
+-- DROP TABLE IF EXISTS NAPSStation;
+CREATE EXTERNAL TABLE IF NOT EXISTS NAPSStation
+(StationID int, StationName string,  StationType string, Status string, Toxic string, Designated string,
+ProvinceName string, StreetAddr string, City string, Country string, FSA string, PostalCode string,
+Timezone float, Latitude float, Longitude float, ElevationMeter int)
+COMMENT 'Canadian NAPS Stations (National Air Pollution Surveillance)'
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
+LOCATION '/user/Tri/AirAnalysis/NAPSStation'
+TBLPROPERTIES ('CreateBy'='Tri', 'CreateDate'='2014-04-17', 'Project'='Canada Air Quality');
+
+--Rename column
+--ALTER TABLE NAPSStation CHANGE ElevationMater ElevationMeter int;
+
+--QUERY. RowCount = 710
+SET hive.cli.print.header=true;
+SELECT COUNT(*) AS RowCount FROM NAPSStation;
+
+/*
+stationid	stationname	provincename	city	postalcode	latitude	longitude	elevationmeter
+10102	WATER STREET POST OFFICE	NEWFOUNDLAND AND LABRADOR	ST. JOHN'S	A1C 1C4	47.56	-52.71139	17
+10400	CENTRAL NEWFOUNDLAND	NEWFOUNDLAND AND LABRADOR	GANDER	A2B 1C6	48.94287	-54.55753	125
+30114	MT ST VINCENT UNIVERSITY	NOVA SCOTIA	HALIFAX	B3M 3J8	44.67111	-63.64389	12
+40209	SAINT JOHN REGIONAL OFFICE	NEW BRUNSWICK	SAINT JOHN	E2J 3B8	45.28028	-66.05611	41
+50110	PARC-PILON	QUEBEC	MONTREAL	H1H 4B5	45.5945	-73.6415	21
+50116	VERDUN	QUEBEC	MONTREAL	H4G 1H8	45.47167	-73.57222	21
+50123	55 AVENUE LILAS -  DORVAL	QUEBEC	MONTREAL	H9S 3L8	45.43917	-73.73111	30
+50701	DEQUEN	QUEBEC	SEPT-�LES		50.20972	-66.38583	3
+50902	PARC BERTHIER	QUEBEC	SAGUENAY	G7S 2J6	48.43417	-71.185	93
+55001	MONT SAINT-MICHEL	QUEBEC	FERME NEUVE		46.76861	-75.43194	256
+60402	ONTARIO SCIENCE CENTRE	ONTARIO	TORONTO	M3C 1T3	43.715	-79.34111	105
+60425	QUEEN & UNIVERSITY	ONTARIO	TORONTO		43.65028	-79.38694	90
+60433	BAY & WELLESLEY _Toronto Downtown	Ontario	TORONTO		43.66417	-79.38722	107
+60507	HUGHSON & HUNTER	ONTARIO	HAMILTON		43.25361	-79.86944	100
+60514	NASH RD. & KENTLEY DR.	ONTARIO	HAMILTON		43.23333	-79.76667	84
+60805	521 MEMORIAL AVENUE	ONTARIO	THUNDER BAY	P7B 3Y6	48.42087	-89.23855	197
+60902	372 DUNDAS	ONTARIO	LONDON	N6B 1V7	42.98639	-81.24083	247
+61001	156 VICTORIA STREET	ONTARIO	SARNIA		42.97306	-82.40611	183
+61104	10 HOSPITAL DRIVE _Peterborough_	ONTARIO	PETERBOROUGH	K9J 8M1	44.30192	-78.34622	236
+61402	324 GRAND RIVER AVE. _Brantford_	ONTARIO	BRANTFORD		43.13861	-80.29264	210
+70104	UNION STOCK YARDS	MANITOBA	WINNIPEG	R2J 0K4	49.88	-97.08556	226
+80110	2505 11th. AVENUE	SASKATCHEWAN	REGINA	S4P 0K6	50.45017	-104.61722	585
+90203	407-31 AVENUE N.W.	ALBERTA	CALGARY		51.08048	-114.06784	1082
+90225	PALLISER DR & OAKWOOD SW	ALBERTA	CALGARY		50.96944	-114.12472	1104
+91901	CAROLINE	ALBERTA	CAROLINE		51.95	-114.7	1140
+92701	CROSSFIELD-CARSTAIRS _PORTABLE_	ALBERTA	Airdrie	T4B 1R1	51.2924	-114.0028	1099
+93501	LIBERTY PARK	ALBERTA	Pine Lake		52.1249	-113.4921	884
+100113	ANNACIS ISLAND  DELTA	BRITISH COLUMBIA	GVRD - DELTA		49.16444	-122.93	29
+100401	FEDERAL BUILDING	BRITISH COLUMBIA	KAMLOOPS		50.6747	-120.334	381
+104801	DUNCAN DEYKIN AVENUE	BRITISH COLUMBIA	DUNCAN	V9L 5R2	48.80278	-123.645	62
+*/
+--710 total rows, 20 buckets -> roughly 35 records/bucket
+SELECT StationID, StationName, ProvinceName, City, PostalCode, Latitude, Longitude, ElevationMeter
+FROM NAPSStation TABLESAMPLE(BUCKET 9 OUT OF 20 ON rand());
+
+--(end)--

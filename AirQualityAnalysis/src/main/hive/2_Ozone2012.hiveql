@@ -1,0 +1,269 @@
+/*==========================================================
+Toronto User SQL Group - http://toronto.sqlpass.org/
+Session April 2014 - "Discovery of Hadoop Under a Relational Lens Scope"
+
+Parse NAPS Measurements of Ozone in 2012 and create Ozi=one2012 ready to query
+
+Data Preparation:
+   $ scp /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/resources/2012O3.hly root@hdpsbhv:/root/HadoopExo/
+   # hdfs dfs -mkdir -p /user/Tri/AirAnalysis/Ozone2012RawFL/
+   # hdfs dfs -copyFromLocal -f /root/HadoopExo/2012O3.hly /user/Tri/AirAnalysis/Ozone2012RawFL/
+
+2014-04-17 - Tri Nguyen
+==========================================================*/
+
+/*
+PC Stat  YYYYMMDD AVG MIN MAX H01 H02 H03 H04 H05 H06 H07 H08 H09 H10 H11 H12 H13 H14 H15 H16 H17 H18 H19 H20 H21 H22 H23 H24
+00701010220120105  23   5  29  26  25  25  28  28  27  29  28  26  26  26  27-999-999-999-999  23  26  24  22  16  10   8   5
+00701010220120106  25  17  31  19  31  29  29  29  30  31  30  26  20  17-999  24  24  24  24  24  21  23  24  26  23  23  27
+
+Regex:
+(?:...) = noncapturing group, which means this grp will be ignored
+
+*/
+
+--------------------------------------------
+-- Custom JAR to invoke custom Eval UDF for calculating Avg, Min, Max on ARRAY<int>
+-- NOTE1: The path is LOCAL
+-- NOTE2: read comments header in /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/java/tradoop/HiveUtil/IntegerArrayAvg.java
+--        for instructions how to create & deploy the *.jar file
+--------------------------------------------
+ADD JAR ./MyHiveUDF.jar;
+--DELETE JAR ./MyHiveUDF.jar;
+
+CREATE TEMPORARY FUNCTION AvgArrayUDF AS 'tradoop.HiveUtil.IntegerArrayAvg';
+CREATE TEMPORARY FUNCTION MinArrayUDF AS 'tradoop.HiveUtil.IntegerArrayMin';
+CREATE TEMPORARY FUNCTION MaxArrayUDF AS 'tradoop.HiveUtil.IntegerArrayMax';
+--DROP TEMPORARY FUNCTION IF EXISTS AvgArrayUDF;
+
+
+
+/*--------------------------------------------------------
+  CREATE "Raw" Table (External)
+  - Parse the fixed length record into columns
+  - Column data type is not yet final (too complex, probably impossible to parse & cast)
+--------------------------------------------------------*/
+
+-- DROP TABLE IF EXISTS Ozone2012RawFL;
+CREATE EXTERNAL TABLE IF NOT EXISTS Ozone2012RawFL
+(PollutantCode string, StationID int, Year string, Month string, Day string, DayAverage string, DayMin string, DayMax string,
+H01 string, H02 string, H03 string, H04 string, H05 string, H06 string, H07 string, H08 string, H09 string, H10 string,
+H11 string, H12 string, H13 string, H14 string, H15 string, H16 string, H17 string, H18 string, H19 string, H20 string,
+H21 string, H22 string, H23 string, H24 string)
+COMMENT 'Ozone Measures 2012, intermediate data, Columns parsed from NAPS *.hly fixed length records'
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe'
+WITH SERDEPROPERTIES ("input.regex" = "^(\\d{3})(\\d{6})(\\d{4})(\\d{2})(\\d{2})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})$")
+LOCATION '/user/Tri/AirAnalysis/Ozone2012RawFL'
+TBLPROPERTIES ('CreateBy'='Tri', 'CreateDate'='2014-04-17', 'Project'='Canada Air Quality');
+
+/*
+ALTER TABLE Ozone2012RawFL CHANGE MeasureDate MeasureDate string;
+
+*/
+
+
+/*--------------------------------------------------------
+  Date Review & Test of Type Conversion
+--------------------------------------------------------*/
+
+SELECT COUNT(*) AS RowCount FROM Ozone2012RawFL; --74065
+
+-- Total RowCount = 74065, 3700 buckets -> each bucket contains roughly 20 records
+SELECT * FROM Ozone2012RawFL TABLESAMPLE(BUCKET 2345 OUT OF 3700 ON rand());
+
+--Test type conversion: String -> Date , List of int -> Array<int>
+SELECT PollutantCode, StationID, CAST(concat_ws('-',Year, Month,Day) AS date) MeasureDate,
+CAST(regexp_replace(DayAverage,'\\s','') AS int) DayAverage, CAST(regexp_replace(DayMin,'\\s','')  AS int) DayMin, CAST(regexp_replace(DayMax,'\\s','')  AS int) DayMax,
+ARRAY(CAST(regexp_replace(H01,'\\s','') AS int), CAST(regexp_replace(H02,'\\s','') AS int), CAST(regexp_replace(H03,'\\s','') AS int)) AS HourReadings
+FROM Ozone2012RawFL TABLESAMPLE(BUCKET 321 OUT OF 2000 ON rand());
+
+
+--Each column in the proper datatype
+--  remove spaces (so cast to integer can work)
+-- -999 is considered missing value (becomes '' so cast to int give null)
+SELECT PollutantCode, StationID, CAST(concat_ws('-',Year, Month,Day) AS date) MeasureDate,
+CAST(regexp_replace(DayAverage,'\\s|-999','') AS int) DayAverage, CAST(regexp_replace(DayMin,'\\s|-999','')  AS int) DayMin, CAST(regexp_replace(DayMax,'\\s|-999','')  AS int) DayMax,
+CAST(regexp_replace(H01,'\\s|-999','') AS int) H01, CAST(regexp_replace(H02,'\\s|-999','') AS int) H02, CAST(regexp_replace(H03,'\\s|-999','') AS int) H03,
+CAST(regexp_replace(H04,'\\s|-999','') AS int) H04, CAST(regexp_replace(H05,'\\s|-999','') AS int) H05, CAST(regexp_replace(H06,'\\s|-999','') AS int) H06,
+CAST(regexp_replace(H07,'\\s|-999','') AS int) H07, CAST(regexp_replace(H08,'\\s|-999','') AS int) H08, CAST(regexp_replace(H09,'\\s|-999','') AS int) H09, CAST(regexp_replace(H10,'\\s|-999','') AS int) H10,
+CAST(regexp_replace(H11,'\\s|-999','') AS int) H11, CAST(regexp_replace(H12,'\\s|-999','') AS int) H12, CAST(regexp_replace(H13,'\\s|-999','') AS int) H13,
+CAST(regexp_replace(H14,'\\s|-999','') AS int) H14, CAST(regexp_replace(H15,'\\s|-999','') AS int) H15, CAST(regexp_replace(H16,'\\s|-999','') AS int) H16,
+CAST(regexp_replace(H17,'\\s|-999','') AS int) H17, CAST(regexp_replace(H18,'\\s|-999','') AS int) H18, CAST(regexp_replace(H19,'\\s|-999','') AS int) H19, CAST(regexp_replace(H20,'\\s|-999','') AS int) H20,
+CAST(regexp_replace(H21,'\\s|-999','') AS int) H21, CAST(regexp_replace(H22,'\\s|-999','') AS int) H22, CAST(regexp_replace(H23,'\\s|-999','') AS int) H23, CAST(regexp_replace(H24,'\\s|-999','') AS int) H24
+FROM Ozone2012RawFL TABLESAMPLE(BUCKET 321 OUT OF 2000 ON rand());
+
+
+/*--------------------------------------------------------
+  Intermeditate Table (Managed)
+
+  NOTE: normally this table could be used as Final but b/c of a bug (see PROOF OF BUG)
+  we need to generate another table which avoid the use of the complicate AvgArrayUDF()
+
+  - Storage Format: SequenceFile (just for fun)
+  - 24 Hxx values becomes AARRAY<int>
+
+Compare storage size: SEQ is "only" 88% size of TextFile uncompressed ("only" b/c orig file already pretty compact)
+
+hive> dfs -ls /user/Tri/AirAnalysis/Ozone2012RawFL;
+-rw-r--r--   3 root hdfs    9406130 2014-04-17 11:47 /user/Tri/AirAnalysis/Ozone2012RawFL/2012O3.hly
+
+hive> dfs -ls /apps/hive/warehouse/tempozone2012;
+-rw-r--r--   3 root hdfs    8295945 2014-04-17 18:52 /apps/hive/warehouse/tempozone2012/000000_0
+
+--------------------------------------------------------*/
+-- DROP TABLE IF EXISTS tempOzone2012;
+CREATE TABLE tempOzone2012
+COMMENT 'Intermediate Table to compute Calc values of Avg, Min, Max on ARRAY<int>'
+STORED AS SEQUENCEFILE
+AS
+SELECT PollutantCode, StationID, CAST(concat_ws('-',Year, Month,Day) AS date) MeasureDate,
+CAST(regexp_replace(DayAverage,'\\s|-999','') AS int) DayAverage, CAST(regexp_replace(DayMin,'\\s|-999','')  AS int) DayMin, CAST(regexp_replace(DayMax,'\\s|-999','')  AS int) DayMax,
+ARRAY(
+  CAST(regexp_replace(H01,'\\s|-999','') AS int), CAST(regexp_replace(H02,'\\s|-999','') AS int), CAST(regexp_replace(H03,'\\s|-999','') AS int),
+  CAST(regexp_replace(H04,'\\s|-999','') AS int), CAST(regexp_replace(H05,'\\s|-999','') AS int), CAST(regexp_replace(H06,'\\s|-999','') AS int),
+  CAST(regexp_replace(H07,'\\s|-999','') AS int), CAST(regexp_replace(H08,'\\s|-999','') AS int), CAST(regexp_replace(H09,'\\s|-999','') AS int), CAST(regexp_replace(H10,'\\s|-999','') AS int),
+  CAST(regexp_replace(H11,'\\s|-999','') AS int), CAST(regexp_replace(H12,'\\s|-999','') AS int), CAST(regexp_replace(H13,'\\s|-999','') AS int),
+  CAST(regexp_replace(H14,'\\s|-999','') AS int), CAST(regexp_replace(H15,'\\s|-999','') AS int), CAST(regexp_replace(H16,'\\s|-999','') AS int),
+  CAST(regexp_replace(H17,'\\s|-999','') AS int), CAST(regexp_replace(H18,'\\s|-999','') AS int), CAST(regexp_replace(H19,'\\s|-999','') AS int), CAST(regexp_replace(H20,'\\s|-999','') AS int),
+  CAST(regexp_replace(H21,'\\s|-999','') AS int), CAST(regexp_replace(H22,'\\s|-999','') AS int), CAST(regexp_replace(H23,'\\s|-999','') AS int), CAST(regexp_replace(H24,'\\s|-999','') AS int)
+) AS HourReadings
+FROM Ozone2012RawFL;
+
+--Check1: columns are correctly in their datatype (wrong conversion will display NULL value)
+--Check2: Hxx must have NULL instead of -999
+SELECT PollutantCode, StationID, MeasureDate, DayAverage, DayMin, DayMax, HourReadings
+FROM tempOzone2012 TABLESAMPLE(BUCKET 444 OUT OF 2000 ON rand());
+
+
+--Abnormal value?
+SELECT Min(DayAverage), Max(DayAverage), Min(DayMin), Max(DayMin), Min(DayMax), Max(DayMax) FROM tempOzone2012;
+
+
+
+/*------------------------------------------------
+QUALITY CHECK #1: Check that the tempOzone2012 table has the same calculation
+Average, Min, Max than the precalculated values
+
+Purpose:
+- serves as verification that the NAPS *.hly file has been correctly parsed
+- Make use of my cool custom Eval UDFs to compute Avg, Min, Max from an Array
+
+stationid	measuredate	dayaverage	avgcalc	daymin	mincalc	daymax	maxcalc	hourreadings
+10801	2012-11-20	34	34	28	28	39	39	[28,28,29,28,33,39,38,37,37,36,36,36,36,36,36,36,35,35,36,36,36,35,31,30]
+30120	2012-03-11	26	26	7	7	40	40	[18,16,15,13,11,10,9,7,17,30,31,31,35,38,37,38,40,38,36,37,35,33,31,25]
+41302	2012-09-15	36	36	14	14	53	53	[33,36,44,53,53,50,48,49,46,39,33,30,31,30,31,32,41,39,36,35,32,28,16,14]
+50119	2012-12-24	18	18	2	2	25	25	[22,21,22,23,23,21,21,19,19,21,24,24,25,25,24,22,20,19,17,13,4,2,3,4]
+50134	2012-04-14	33	33	23	23	45	45	[25,26,26,23,23,25,26,29,30,31,34,36,39,40,40,44,45,44,38,29,31,37,37,37]
+50308	2012-06-08	22	21	2	2	42	42	[9,9,7,3,2,4,7,16,28,30,29,26,30,33,32,28,26,22,20,26,42,35,32,31]
+50311	2012-06-19	31	30	6	6	47	47	[24,22,16,12,9,6,7,15,25,34,39,41,42,41,44,45,45,43,47,44,34,34,37,30]
+52301	2012-05-10	29	29	23	23	38	38	[38,26,23,26,27,27,28,null,null,null,28,28,28,26,26,26,28,32,33,33,34,32,32,37]
+53301	2012-06-03	22	21	18	18	26	26	[24,25,25,23,23,22,22,20,20,18,18,20,19,19,20,21,22,22,24,24,23,26,25,20]
+53601	2012-08-08	29	28	9	9	44	44	[30,22,20,18,23,19,22,29,33,34,37,42,43,43,43,44,39,38,31,22,19,17,13,9]
+55301	2012-04-21	23	22	11	11	32	32	[13,11,12,15,17,15,18,20,22,20,20,21,22,24,26,27,28,30,29,29,30,32,32,30]
+55601	2012-02-25	38	38	30	30	41	41	[30,33,34,35,37,37,37,37,38,39,39,40,40,41,41,41,41,41,41,40,40,40,40,40]
+60104	2012-10-10	21	20	13	13	31	31	[22,17,15,13,17,15,13,15,18,21,22,26,30,28,31,28,26,23,21,21,19,19,19,19]
+60429	2012-04-10	25	24	14	14	39	39	[39,36,34,31,24,17,17,24,28,28,28,30,31,26,25,25,22,22,20,20,21,17,16,14]
+60433	2012-12-29	19	19	3	3	30	30	[3,7,6,13,18,16,17,14,17,18,19,22,23,27,27,27,30,25,26,28,19,17,21,26]
+60513	2012-02-01	28	27	23	23	35	35	[35,35,35,33,32,30,28,25,24,26,28,27,26,25,25,24,23,26,24,25,24,25,27,28]
+60709	2012-02-14	23	22	11	11	33	33	[30,33,29,27,26,27,23,22,19,23,24,24,26,27,19,18,11,15,18,21,23,22,21,19]
+61802	2012-07-08	24	24	16	16	34	34	[22,19,17,16,16,17,18,19,21,23,25,25,26,28,31,32,33,33,34,32,29,25,23,22]
+61802	2012-10-09	24	23	4	4	39	39	[19,19,16,16,14,7,4,7,13,20,23,28,31,34,35,38,39,37,35,31,27,25,24,25]
+65001	2012-02-04	21	21	1	1	30	30	[24,25,26,26,22,4,1,1,4,13,26,27,25,26,26,27,27,29,30,30,26,23,24,22]
+65101	2012-05-11	36	36	13	13	48	48	[33,33,34,33,31,27,28,30,34,39,43,44,45,46,47,48,48,47,46,43,31,22,20,13]
+65201	2012-12-23	32	31	22	22	36	36	[32,35,35,34,34,31,32,34,34,27,32,35,36,33,33,33,34,33,33,32,27,26,26,22]
+65301	2012-08-24	51	50	15	15	86	86	[22,22,15,15,18,20,20,39,44,49,60,65,70,73,77,86,84,78,72,69,66,62,53,44]
+65401	2012-07-24	28	28	18	18	46	46	[46,33,32,34,31,29,31,30,29,30,31,29,26,27,29,28,27,26,27,25,24,21,18,20]
+70501	2012-04-04	36	36	31	31	41	41	[41,39,37,35,35,34,31,34,37,36,36,38,38,37,37,37,36,36,36,34,35,35,39,40]
+80402	2012-03-08	36	35	28	28	43	43	[40,null,42,42,42,43,41,37,36,37,37,36,33,34,33,32,31,28,28,30,32,37,34,40]
+80402	2012-11-20	29	28	21	21	33	33	[31,null,31,31,29,28,27,30,30,30,29,31,29,24,24,24,25,21,24,29,31,32,32,33]
+90222	2012-03-17	28	27	5	5	47	47	[29,21,18,20,16,9,5,7,18,23,38,44,46,47,45,41,39,38,38,36,31,23,17,16]
+90606	2012-08-07	25	25	8	8	57	57	[24,null,16,8,9,9,9,14,18,27,35,44,49,53,57,38,31,33,33,25,16,13,12,8]
+94401	2012-12-24	27	27	24	24	31	31	[31,30,30,30,29,29,28,27,24,24,24,25,27,26,26,27,29,null,28,28,26,27,26,25]
+100125	2012-03-19	25	24	1	1	38	38	[16,28,10,2,2,1,2,11,27,32,34,37,38,37,37,36,35,32,27,28,29,30,32,31]
+100127	2012-08-09	19	18	1	1	37	37	[13,4,5,5,7,1,6,11,16,14,16,18,25,34,37,37,36,35,32,26,19,22,17,14]
+100132	2012-09-20	10	9	0	0	32	32	[3,0,0,5,6,2,1,1,2,7,16,9,11,22,29,27,32,24,12,4,0,3,4,7]
+129103	2012-08-12	NULL	0	NULL	2147483647	NULL	-2147483648	[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+------------------------------------------------*/
+
+SELECT StationID, MeasureDate, DayAverage, CAST(AvgArrayUDF(HourReadings) AS int) AVGCalc,
+DayMin, MinArrayUDF(HourReadings) MINCalc,
+DayMax, MaxArrayUDF(HourReadings) MAXCalc, HourReadings
+FROM tempOzone2012 TABLESAMPLE(BUCKET 654 OUT OF 1500 ON rand());
+
+
+/*------------------------------------------------
+QUALITY CHECK #2: Data Quality Assessment
+------------------------------------------------*/
+
+--Abnormal value?
+SELECT Min(DayAverage), Max(DayAverage), Min(DayMin), Max(DayMin), Min(DayMax), Max(DayMax),
+CAST(Min(AvgArrayUDF(HourReadings)) AS int), CAST(Max(AvgArrayUDF(HourReadings)) AS int),
+Min(MinArrayUDF(HourReadings)), Max(MinArrayUDF(HourReadings)),
+Min(MaxArrayUDF(HourReadings)), Max(MaxArrayUDF(HourReadings))
+FROM Ozone2012;
+
+--Any abnormal AvgArrayUDF(HourReadings) per city? Especially when value = -
+SELECT S.City, CAST(Min(AvgArrayUDF(O3.HourReadings)) AS int) AVGCalc
+FROM Ozone2012 O3
+INNER JOIN NAPSStation S ON S.StationID = O3.StationID
+GROUP BY S.City
+ORDER BY City;
+
+--ZeroAvgCalcCount: 1438, TotalRowCount: 74065
+SELECT COUNT(*) AS ZeroAvgCalcCount FROM Ozone2012 WHERE CAST(AvgArrayUDF(HourReadings) AS int) = 0;
+--ZeroAvgCount: 5, TotalRowCount: 74065
+SELECT COUNT(*) AS ZeroAvgCount FROM Ozone2012 WHERE DayAverage = 0;
+
+
+
+
+---------------------------------------------------------
+-- PROOF OF BUG: STEP 1/2:
+-- Here nothing wrong with the results of AvgArrayUDF(OZ.HourReadings)
+---------------------------------------------------------
+
+--Show records from some cities (Query 3 show their AvgCalc = 0)
+SELECT S.City,
+OZ.DayAverage, CAST(AvgArrayUDF(OZ.HourReadings) AS int) AVGCalc,
+OZ.DayMin, MinArrayUDF(OZ.HourReadings) MINCalc,
+OZ.DayMax, MaxArrayUDF(OZ.HourReadings) MAXCalc, OZ.HourReadings
+FROM tempOzone2012 OZ
+INNER JOIN NAPSStation S ON S.StationID = OZ.StationID
+WHERE S.City = 'HAMILTON';
+--WHERE CAST(AvgArrayUDF(OZ.HourReadings) AS int) = 0 LIMIT 50;
+
+
+---------------------------------------------------------
+-- PROOF OF BUG: STEP 2/2: in a GROUP BY suddenly AvgArrayUDF(OZ.HourReadings) give no more results
+-- Result Query: ONTARIO	HAMILTON	NaN
+-- Reason: Max(double value) has troubles if one of the result is NULL
+---------------------------------------------------------
+SELECT S.ProvinceName, S.City,
+Max(AvgArrayUDF(OZ.HourReadings)) AS AVGOzoneDayMax
+FROM tempOzone2012 OZ
+INNER JOIN NAPSStation S ON S.StationID = OZ.StationID
+WHERE S.City = 'HAMILTON'
+GROUP BY S.ProvinceName, S.City;
+
+
+
+/*--------------------------------------------------------
+  FINAL Table (Managed)
+
+hive> dfs -ls /apps/hive/warehouse/ozone2012;
+-rw-r--r--   3 root hdfs    3757290 2014-04-17 18:53 /apps/hive/warehouse/ozone2012/000000_0
+--------------------------------------------------------*/
+
+-- DROP TABLE IF EXISTS Ozone2012;
+CREATE TABLE Ozone2012
+COMMENT 'Ozone Measures 2012 (Canadian National Air Pollution Surveillance)'
+STORED AS SEQUENCEFILE
+TBLPROPERTIES ('CreateBy'='Tri', 'CreateDate'='2014-04-17', 'Project'='Canada Air Quality')
+AS
+SELECT PollutantCode, StationID, MeasureDate,
+DayAverage, round(AvgArrayUDF(HourReadings), 2) AVGCalc,
+DayMin, MinArrayUDF(HourReadings) MINCalc, DayMax, MaxArrayUDF(HourReadings) MAXCalc
+FROM tempOzone2012;
+
+
+--(end)--

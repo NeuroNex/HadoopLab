@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Hadoop2">
+    <CLASSES>
+      <root url="file:///usr/local/Hadoop/share/hadoop/common" />
+      <root url="file:///usr/local/Hadoop/share/hadoop/mapreduce" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file:///usr/local/Hadoop/share/hadoop/common" recursive="false" />
+    <jarDirectory url="file:///usr/local/Hadoop/share/hadoop/mapreduce" recursive="false" />
+  </library>
+</component>
