@@ -1,0 +1,31 @@
+Country,ISOCode,Continent,Capital,Language1,Language2,Currency,CurrencyCode,GDP2013,SurfaceKM2,Population
+United States,US,NorthAmerica,Washington DC,English,Spanish,USD Dollar,USD,16768050,9857306,318968000
+China,CN,Asia,Beijing,Chinese,NA,Yuan,CNY,9469124,9596961,1357380000
+Japan,JP,Asia,Tokyo,Japanese,NA,Yen,JPY,4898530,377944,126434964
+Germany,DE,Europe,Berlin,German,NA,Euro,EUR,3635959,357168,80716000
+France,FR,Europe,Paris,Français,NA,Euro,EUR,2807306,640679,66616416
+United Kingdom,GB,Europe,London,English,NA,Pound sterling,GBP,2523216,243610,64100000
+Brazil,BR,SouthAmerica,Brasília,Portuguese,NA,Real,BRL,2246037,8515767,202656788
+Russia,RU,Europe,Moscow,Russian,NA,Russian ruble,RUB,2096774,17098242,143800000
+Italy,IT,Europe,Rome,Italian,NA,Euro,EUR,2071955,301338,60782668
+India,IN,Asia,New Delhi,Hindi,English,Indian Rupee,INR,1876811,3287590,1210193422
+Canada,CA,NorthAmerica,Ottawa,English,Français,CAD Dollar,CAD,1826769,9984670,35540419
+Australia,AU,Australia,Canberra,English,NA,AUD Dollar,AUD,1505924,7692024,23642900
+Spain,ES,Europe,Madrid,Spanish,NA,Euro,EUR,1358687,504645,46704314
+South Korea,KR,Asia,Seoul,Korean,NA,South Korean won,KRW,1304468,100210,50219669
+Mexico,MX,NorthAmerica,Mexico City,Spanish,NA,Peso,MXN,1260915,1972550,118395054
+Indonesia,ID,Asia,Jakarta,Indonesian,NA,Rupiah,IDR,870275,1904569,252164800
+Netherlands,NL,Europe,Amsterdam,Dutch,NA,Euro,EUR,853806,42508,17034544
+Turkey,TR,Asia,Ankara,Turkish,NA,Turkish lira,TRY,819990,783562,76667864
+Saudi Arabia,SA,Asia,Riyadh,Arabic,NA,Saudi riyal,SAR,748450,2149690,29994272
+Switzerland,CH,Europe,Bern,German,Français,Swiss franc,CHF,650431,41285,8014000
+Argentina,AR,SouthAmerica,Buenos Aires,Spanish,NA,Peso,ARS,610288,2780400,42669500
+Sweden,SE,Europe,Stockholm,Swedish,NA,Swedish krona,SEK,558949,449964,9716962
+Nigeria,NG,Africa,Abuja,English,Yoruba Hausa,Naira,NGN,521812,923768,174507539
+Poland,PL,Europe,Warsaw,Polish,NA,Złoty,PLN,517705,312679,38483957
+Norway,NO,Europe,Oslo,Norwegian,Sami,Norwegian krone,NOK,512581,385178,5136700
+Belgium,BE,Europe,Brussels,Dutch,Français,Euro,EUR,508275,30528,11198638
+Taiwan,TW,Asia,Taipei,Chinese,NA,New Taiwan dollar,TWD,489089,36193,23373517
+Austria,AT,Europe,Vienna,German,NA,Euro,EUR,416062,83871,8504850
+United Arab Emirates,AE,Asia,Abu Dhabi,Arabic,NA,UAE dirham,AED,402340,83600,9205651
+Thailand,TH,Asia,Bankok,Thai,NA,Baht,THB,387253,513120,66720153
