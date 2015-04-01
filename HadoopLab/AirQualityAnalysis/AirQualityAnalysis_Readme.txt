@@ -1,6 +1,6 @@
 ==================================================
-Toronto User Group Session of April 2012
-Toronto Hadoop User Group of May 2014
+Toronto SQL Server User Group, Session of April 2014
+Toronto Hadoop User Group, Session of May 2014
 
 Discovery of Hadoop Under a Relational Lens Scope
 
@@ -126,7 +126,7 @@ You will need to uncompress and use a dev environment of SQLServer 2012R2 or SQL
 to open review and run the solution. 
 
 
-6. COPYRIGHGTS
+6. COPYRIGHTS
 ==============
 The code is free and can be used for private or commercial purposes.
 You don't need to ask for permission. However the author would appreciate
