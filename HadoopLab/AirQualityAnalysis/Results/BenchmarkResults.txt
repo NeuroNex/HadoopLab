@@ -3,13 +3,19 @@
 - Group (Province, CityName), Max(Average Ozone in 2012)
 - Sort Grouping Result by descending values of Ozone
 
-(ORIGINAL DESIGN - April 2014)
-HDPSandbox 2.0: Hadoop 2.20 released in November 2013
+
 --------------------------------------------------------------------------------------
                 SQL2012 R2          Hive                  Pig           Java MapReduce
 --------------------------------------------------------------------------------------
 Design time       4 h               4 h                   2h            30 hours
 
+
+
+(ORIGINAL DESIGN - April 2014)
+HDPSandbox 2.0: Hadoop 2.20 released in November 2013
+--------------------------------------------------------------------------------------
+                SQL2012 R2          Hive                  Pig           Java MapReduce
+--------------------------------------------------------------------------------------
 Exec Time         6 secs            100 secs              154 secs      49 secs
 
 Xtime slower
@@ -25,26 +31,38 @@ Machine         Elitebook 8530w     VM HyperV, 6GB        same as Hive  same as 
 --------------------------------------------------------------------------------------
 
 
+
 (UPDATE May 2014, Same code, only the Hadoop client node is changed)
-HDPSandbox 2.1: Hadoop 2.24 released in May 2014
+HDPSandbox 2.1: Hadoop 2.40 released in May 2014
 --------------------------------------------------------------------------------------
                 SQL2012 R2          Hive                  Pig           Java MapReduce
 --------------------------------------------------------------------------------------
-Design time       4 h               4 h                   2h            30 hours
-
 Exec Time         6 secs            138 secs              194 secs      70 secs
-
-Xtime slower
-than SQLServer    n/a               x23                   32x           x11
 
 Details           5" SSIS           30" tempOzone2012
 Exec Time         1" SQL Query      28" Ozone2012
                                     80" Final Results
 
 Machine         Elitebook 8530w     VM HyperV, 6GB        same as Hive  same as Hive
-                P8700 @ 2.5GHz      HDPSandbox 2.0
-                8GB                 Hadoop 2.20
+                P8700 @ 2.5GHz      HDPSandbox 2.1
+                8GB                 Hadoop 2.40
 --------------------------------------------------------------------------------------
-Details           5" SSIS           30" tempOzone2012
-Exec Time         1" SQL Query      28" Ozone2012
-                                    80" Final Results
+
+
+(UPDATE July 2014, Same code)
+HDP 2.1.2 Cluster with 4 nodes: Hadoop 2.40, HDP 2.1.2 repo update released in end June 2014
+--------------------------------------------------------------------------------------
+                SQL2012 R2          Hive                        Pig           Java MapReduce
+                                    MR    Tez
+--------------------------------------------------------------------------------------
+Exec Time         6 secs            144   61   secs              205 secs      69 secs
+
+Details           5" SSIS           33"   24"  tempOzone2012
+Exec Time         1" SQL Query      30"   15"  Ozone2012
+                                    81"   22"  Final Results
+
+Machine         Elitebook 8530w     HDP Cluster, having 4 nodes:
+                P8700 @ 2.5GHz      CentOS 6.5, 1 CPU, 6GB
+                8GB                 CPU: AMD FX-8320, Host = HyperV 2012R2, 32GB physical
+--------------------------------------------------------------------------------------
+

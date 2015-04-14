@@ -87,7 +87,7 @@ A conscencious effort has been made to use the "best practices" corresponding to
 
 4. TEST RESULTS
 ===============
-Read /home/tri/Documents/HadoopLab/AirQualityAnalysis/Results/BenchmarkResults.txt
+Read ./Results/BenchmarkResults.txt
 
 5. PROJECT FOLDERS
 ===================
