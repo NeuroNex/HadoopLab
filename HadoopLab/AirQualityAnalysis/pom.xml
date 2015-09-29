@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<groupId>HadoopLab.com</groupId>
+	<groupId>HadoopLab.local</groupId>
 	<artifactId>AirQualityAnalysis</artifactId>
 	<packaging>pom</packaging>
 	<version>1.0-SNAPSHOT</version>
@@ -40,6 +40,24 @@
 			<groupId>org.apache.hive</groupId>
 			<artifactId>hive-exec</artifactId>
 			<version>0.13.0</version>
+		</dependency>
+		<dependency>
+			<!-- LOCAL DEV MACHINE
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-core_2.11</artifactId>
+			<version>1.4.0</version>
+			-->
+
+			<!-- HDP 2.2.4 -->
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-core_2.10</artifactId>
+			<version>1.2.1</version>
+
+			<!--
+			mark the Spark Core dependency as provided so that, later on, when we use an assembly JAR
+			we don’t include the spark-core JAR, which is already on the classpath of the workers.
+			-->
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 </project>

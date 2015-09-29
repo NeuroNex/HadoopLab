@@ -1,11 +1,11 @@
-import tradoop.OzoneAnalysis.HLYRecordParser;
+import hadooplab.OzoneAnalysis.HLYRecordParser;
 
 import java.io.*;
 
 /**
  * Quality Check the Ozone file (parse OK without runtime error?)
  * Results:
- * HLY File....: /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/resources/2012O3.hly
+ * HLY File....: ~/Documents/IntelliJProjects/BigDataLAB/13_AirQualityAnalysis/src/main/resources/2012O3.hly
  * Total Record: 74065
  * Valid Record: 72666
  * Short Record:     1 (have less than 125 chars)
@@ -15,7 +15,7 @@ import java.io.*;
  * 2014-04-19 - Tri Nguyen
  */
 public class CheckOzoneFile {
-	private static final String OZONE_LOCAL_FILENAME = "/home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/resources/2012O3.hly";
+	private static final String OZONE_LOCAL_FILENAME = "~/Documents/IntelliJProjects/BigDataLAB/13_AirQualityAnalysis/src/main/resources/2012O3.hly";
 	private static final int MINIMUM_RECORD_LENGTH = 125;
 
 	public static void main(String[] args) {

@@ -1,6 +1,6 @@
 import org.junit.Before;
 import org.junit.Test;
-import tradoop.OzoneAnalysis.NAPSStationParser;
+import hadooplab.OzoneAnalysis.NAPSStationParser;
 
 import java.text.DecimalFormat;
 
@@ -8,7 +8,7 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 /**
- * JUnit tests of HadoopLab.OzoneAnalysis.NAPSStationParser
+ * JUnit tests of hadooplab.OzoneAnalysis.NAPSStationParser
  *
  * 2014-04-18 - Tri Nguyen
  */

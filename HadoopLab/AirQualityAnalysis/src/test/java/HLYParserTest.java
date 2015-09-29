@@ -5,12 +5,12 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
-import tradoop.OzoneAnalysis.HLYRecordParser;
+import hadooplab.OzoneAnalysis.HLYRecordParser;
 
 import static org.junit.Assert.*;
 
 /**
- * JUnit tests of HadoopLab.OzoneAnalysis.HLYRecordParser
+ * JUnit tests of hadooplab.OzoneAnalysis.HLYRecordParser
  *
  * 2014-04-18 - Tri Nguyen
  */
@@ -65,7 +65,7 @@ public class HLYParserTest {
 	}
 
 	/**
-	 * When DayAverage value = -999 HadoopLab.OzoneAnalysis.HLYRecordParser must return NULL instead
+	 * When DayAverage value = -999 hadooplab.OzoneAnalysis.HLYRecordParser must return NULL instead
 	 */
 	@Test
 	public void testDayAverage() {

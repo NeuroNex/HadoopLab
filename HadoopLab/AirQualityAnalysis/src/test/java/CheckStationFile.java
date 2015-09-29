@@ -1,5 +1,5 @@
-import tradoop.OzoneAnalysis.NAPSStationLookup;
-import tradoop.OzoneAnalysis.NAPSStationParser;
+import hadooplab.OzoneAnalysis.NAPSStationLookup;
+import hadooplab.OzoneAnalysis.NAPSStationParser;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -7,9 +7,9 @@ import java.io.FileReader;
 import java.io.IOException;
 
 /**
- * Quality Check the NAPS Station file & the HadoopLab.OzoneAnalysis.NAPSStationLookup class
+ * Quality Check the NAPS Station file & the hadooplab.OzoneAnalysis.NAPSStationLookup class
  * Results:
- * Station File: /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/resources/Stations_v28012014.csv
+ * Station File: ~/Documents/IntelliJProjects/BigDataLAB/13_AirQualityAnalysis/src/main/resources/Stations_v28012014.csv
  * TOTAL   Record..:    710
  * Valid   Record..:    709
  * Invalid Record..:      1 (have less than 16 columns)
@@ -20,7 +20,7 @@ import java.io.IOException;
  * 2014-04-19 - Tri Nguyen
  */
 public class CheckStationFile {
-	private static final String STATION_LOCAL_ABS_FILENAME = "/home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/resources/Stations_v28012014.csv";
+	private static final String STATION_LOCAL_ABS_FILENAME = "~/Documents/IntelliJProjects/BigDataLAB/13_AirQualityAnalysis/src/main/resources/Stations_v28012014.csv";
 	private static final int MINIMUM_COLUMN_COUNT = 16;
 
 	public static void main(String[] args) throws IOException {

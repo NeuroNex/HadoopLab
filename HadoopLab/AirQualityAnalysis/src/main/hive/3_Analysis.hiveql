@@ -6,20 +6,21 @@ Session April 2014 - "Discovery of Hadoop Under a Relational Lens Scope"
 - Dump results in file and compare with those from the SQL2012 R2 solution
 
 2014-04-17 - Tri Nguyen
+2015-07-11 make results compatible with R solutions: Add RowNumber + ORDER BY YearMaxOzone DESC, YearAvgOzone DESC
 ==========================================================*/
 
 --------------------------------------------
 -- Custom JAR to invoke custom Eval UDF for calculating Avg, Min, Max on ARRAY<int>
 -- NOTE1: The path is LOCAL
--- NOTE2: read comments header in /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/java/tradoop/HiveUtil/IntegerArrayAvg.java
+-- NOTE2: read comments header in ~/Documents/IntelliJProjects/BigDataLAB/13_AirQualityAnalysis/src/main/java/hadooplab/HiveUtil/IntegerArrayAvg.java
 --        for instructions how to create & deploy the *.jar file
 --------------------------------------------
-ADD JAR ./MyHiveUDF.jar;
 --DELETE JAR ./MyHiveUDF.jar;
+ADD JAR /root/HadoopExo/Hive/MyHiveUDF.jar;
 
-CREATE TEMPORARY FUNCTION AvgArrayUDF AS 'HiveUtil.IntegerArrayAvg';
-CREATE TEMPORARY FUNCTION MinArrayUDF AS 'HiveUtil.IntegerArrayMin';
-CREATE TEMPORARY FUNCTION MaxArrayUDF AS 'HiveUtil.IntegerArrayMax';
+CREATE TEMPORARY FUNCTION AvgArrayUDF AS 'hadooplab.HiveUtil.IntegerArrayAvg';
+CREATE TEMPORARY FUNCTION MinArrayUDF AS 'hadooplab.HiveUtil.IntegerArrayMin';
+CREATE TEMPORARY FUNCTION MaxArrayUDF AS 'hadooplab.HiveUtil.IntegerArrayMax';
 --DROP TEMPORARY FUNCTION IF EXISTS AvgArrayUDF;
 
 
@@ -34,11 +35,14 @@ MAPJOIN:
 
 NOTE: Hive is smart enough to detect the table size and can make itself the MAPJOIN hint
 
-ATTENTION: Hive 0.13 BUG! Max(double) returns NaN if at least 1 number is null
-           Workaround, so we do Max(int) instead!
+NOTE1: Hive 0.13 BUG! Max(double) returns NaN if at least 1 number is null
+       Workaround, so we do Max(int) instead!
+NOTE2: row_number() : HIVE Windowing and Analytics Functions
+       https://cwiki.apache.org/confluence/display/Hive/LanguageManual+WindowingAndAnalytics
 ------------------------------------------------*/
 
 SET hive.cli.print.header=true;
+SET hive.execution.engine=tez;
 
 -- The syntax for specifying a MAPJOIN is a hint embedded in an SQL C-style comment:
 -- DROP TABLE IF EXISTS OzoneByCitiesResults;
@@ -48,21 +52,26 @@ COLLECTION ITEMS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 STORED AS TEXTFILE
 AS
-SELECT /*+MAPJOIN(NAPSStation) */  S.ProvinceName, S.City,
-Max(CAST(OZ.AVGCalc AS int)) AS AVGOzoneDayMax
+SELECT /*+MAPJOIN(NAPSStation) */
+row_number() OVER (ORDER BY Avg(OZ.AVGCalc) DESC, Max(OZ.AVGCalc) DESC) As RowNum,
+S.ProvinceName, S.City,
+round(Avg(OZ.AVGCalc),2) AS YearAvgOzone, CAST(Max(OZ.AVGCalc) AS int) AS YearMaxOzone
 FROM Ozone2012 OZ
 INNER JOIN NAPSStation S ON S.StationID = OZ.StationID
+WHERE OZ.AVGCalc != 'NaN'
 GROUP BY S.ProvinceName, S.City
-ORDER BY AVGOzoneDayMax DESC, ProvinceName, City;
+ORDER BY YearAvgOzone DESC, YearMaxOzone DESC;
+--CAST(Max(OZ.AVGCalc) AS int) AS YearMaxOzone, CAST(Avg(OZ.AVGCalc) AS int) AS YearAvgOzone
+--ORDER BY YearMaxOzone DESC, YearAvgOzone DESC;
 
 SELECT * FROM OzoneByCitiesResults;
 
 
 -- Capture Query Results to Text File
-hive> dfs -ls /apps/hive/warehouse/ozonebycitiesresults/;
-hive> dfs -cat /apps/hive/warehouse/ozonebycitiesresults/000000_0;
-      $ rm -f /root/HadoopExo/Hive/OzoneByCities_Hive.txt
-hive> dfs -copyToLocal /apps/hive/warehouse/ozonebycitiesresults/000000_0 /root/HadoopExo/Hive/OzoneByCities_Hive.txt;
-$ scp root@hdpsbhv:/root/HadoopExo/Hive/OzoneByCities_Hive.txt /home/tri/Documents/HadoopLab/AirQualityAnalysis/Results/
+# hdfs dfs -ls /apps/hive/warehouse/ozonebycitiesresults/;
+# hdfs dfs -cat /apps/hive/warehouse/ozonebycitiesresults/000000_0;
+# rm -f /root/HadoopExo/Hive/OzoneByCities_Hive.txt
+# hdfs dfs -copyToLocal /apps/hive/warehouse/ozonebycitiesresults/000000_0 /root/HadoopExo/Hive/OzoneByCities_Hive.txt;
+$ scp root@hdpsbhv:/root/HadoopExo/Hive/OzoneByCities_Hive.txt ~/Documents/IntelliJProjects/BigDataLAB/13_AirQualityAnalysis/Results/
 
 --(end)--

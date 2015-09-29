@@ -2,12 +2,7 @@
 Toronto User SQL Group - http://toronto.sqlpass.org/
 Session April 2014 - "Discovery of Hadoop Under a Relational Lens Scope"
 
-Parse NAPS Measurements of Ozone in 2012 and create Ozi=one2012 ready to query
-
-Data Preparation:
-   $ scp /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/resources/2012O3.hly root@hdpsbhv:/root/HadoopExo/
-   # hdfs dfs -mkdir -p /user/Tri/AirAnalysis/Ozone2012RawFL/
-   # hdfs dfs -copyFromLocal -f /root/HadoopExo/2012O3.hly /user/Tri/AirAnalysis/Ozone2012RawFL/
+Parse NAPS Measurements of Ozone in 2012 and create Ozone2012 ready to query
 
 2014-04-17 - Tri Nguyen
 ==========================================================*/
@@ -25,15 +20,19 @@ Regex:
 --------------------------------------------
 -- Custom JAR to invoke custom Eval UDF for calculating Avg, Min, Max on ARRAY<int>
 -- NOTE1: The path is LOCAL
--- NOTE2: read comments header in /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/java/tradoop/HiveUtil/IntegerArrayAvg.java
+-- NOTE2: read comments header in ~/Documents/IntelliJProjects/BigDataLAB/13_AirQualityAnalysis/src/main/java/hadooplab/HiveUtil/IntegerArrayAvg.java
 --        for instructions how to create & deploy the *.jar file
 --------------------------------------------
-ADD JAR ./MyHiveUDF.jar;
 --DELETE JAR ./MyHiveUDF.jar;
 
-CREATE TEMPORARY FUNCTION AvgArrayUDF AS 'tradoop.HiveUtil.IntegerArrayAvg';
-CREATE TEMPORARY FUNCTION MinArrayUDF AS 'tradoop.HiveUtil.IntegerArrayMin';
-CREATE TEMPORARY FUNCTION MaxArrayUDF AS 'tradoop.HiveUtil.IntegerArrayMax';
+-- If using Hive CLI (Beeline cannot access local resource)
+--ADD JAR /root/HadoopExo/Hive/MyHiveUDF.jar;
+
+-- Works OK for Beeline and HIVE CLI
+ADD JAR hdfs:///user/tri/AirAnalysis/MyHiveUDF.jar;
+CREATE TEMPORARY FUNCTION AvgArrayUDF AS 'hadooplab.HiveUtil.IntegerArrayAvg';
+CREATE TEMPORARY FUNCTION MinArrayUDF AS 'hadooplab.HiveUtil.IntegerArrayMin';
+CREATE TEMPORARY FUNCTION MaxArrayUDF AS 'hadooplab.HiveUtil.IntegerArrayMax';
 --DROP TEMPORARY FUNCTION IF EXISTS AvgArrayUDF;
 
 
@@ -44,6 +43,9 @@ CREATE TEMPORARY FUNCTION MaxArrayUDF AS 'tradoop.HiveUtil.IntegerArrayMax';
   - Column data type is not yet final (too complex, probably impossible to parse & cast)
 --------------------------------------------------------*/
 
+SET hive.execution.engine=tez;
+SET hive.cli.print.header=true;
+
 -- DROP TABLE IF EXISTS Ozone2012RawFL;
 CREATE EXTERNAL TABLE IF NOT EXISTS Ozone2012RawFL
 (PollutantCode string, StationID int, Year string, Month string, Day string, DayAverage string, DayMin string, DayMax string,
@@ -53,8 +55,8 @@ H21 string, H22 string, H23 string, H24 string)
 COMMENT 'Ozone Measures 2012, intermediate data, Columns parsed from NAPS *.hly fixed length records'
 ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe'
 WITH SERDEPROPERTIES ("input.regex" = "^(\\d{3})(\\d{6})(\\d{4})(\\d{2})(\\d{2})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})(.{4})$")
-LOCATION '/user/Tri/AirAnalysis/Ozone2012RawFL'
-TBLPROPERTIES ('CreateBy'='Tri', 'CreateDate'='2014-04-17', 'Project'='Canada Air Quality');
+LOCATION '/user/tri/AirAnalysis/Ozone2012RawFL'
+TBLPROPERTIES ('CreateBy'='Tri', 'Project'='Canada Air Quality');
 
 /*
 ALTER TABLE Ozone2012RawFL CHANGE MeasureDate MeasureDate string;
@@ -66,7 +68,9 @@ ALTER TABLE Ozone2012RawFL CHANGE MeasureDate MeasureDate string;
   Date Review & Test of Type Conversion
 --------------------------------------------------------*/
 
-SELECT COUNT(*) AS RowCount FROM Ozone2012RawFL; --74065
+SELECT COUNT(*) AS RowCount FROM Ozone2012RawFL;
+--74065
+--Time taken: 16.563 seconds, Fetched: 1 row(s)
 
 -- Total RowCount = 74065, 3700 buckets -> each bucket contains roughly 20 records
 SELECT * FROM Ozone2012RawFL TABLESAMPLE(BUCKET 2345 OUT OF 3700 ON rand());
@@ -81,7 +85,7 @@ FROM Ozone2012RawFL TABLESAMPLE(BUCKET 321 OUT OF 2000 ON rand());
 --Each column in the proper datatype
 --  remove spaces (so cast to integer can work)
 -- -999 is considered missing value (becomes '' so cast to int give null)
-SELECT PollutantCode, StationID, CAST(concat_ws('-',Year, Month,Day) AS date) MeasureDate,
+SELECT PollutantCode, StationID, CAST(concat_ws('-', Year, Month, Day) AS date) MeasureDate,
 CAST(regexp_replace(DayAverage,'\\s|-999','') AS int) DayAverage, CAST(regexp_replace(DayMin,'\\s|-999','')  AS int) DayMin, CAST(regexp_replace(DayMax,'\\s|-999','')  AS int) DayMax,
 CAST(regexp_replace(H01,'\\s|-999','') AS int) H01, CAST(regexp_replace(H02,'\\s|-999','') AS int) H02, CAST(regexp_replace(H03,'\\s|-999','') AS int) H03,
 CAST(regexp_replace(H04,'\\s|-999','') AS int) H04, CAST(regexp_replace(H05,'\\s|-999','') AS int) H05, CAST(regexp_replace(H06,'\\s|-999','') AS int) H06,
@@ -104,8 +108,8 @@ FROM Ozone2012RawFL TABLESAMPLE(BUCKET 321 OUT OF 2000 ON rand());
 
 Compare storage size: SEQ is "only" 88% size of TextFile uncompressed ("only" b/c orig file already pretty compact)
 
-hive> dfs -ls /user/Tri/AirAnalysis/Ozone2012RawFL;
--rw-r--r--   3 root hdfs    9406130 2014-04-17 11:47 /user/Tri/AirAnalysis/Ozone2012RawFL/2012O3.hly
+hive> dfs -ls /user/tri/AirAnalysis/Ozone2012RawFL;
+-rw-r--r--   3 root hdfs    9406130 2014-04-17 11:47 /user/tri/AirAnalysis/Ozone2012RawFL/2012O3.hly
 
 hive> dfs -ls /apps/hive/warehouse/tempozone2012;
 -rw-r--r--   3 root hdfs    8295945 2014-04-17 18:52 /apps/hive/warehouse/tempozone2012/000000_0
@@ -116,7 +120,7 @@ CREATE TABLE tempOzone2012
 COMMENT 'Intermediate Table to compute Calc values of Avg, Min, Max on ARRAY<int>'
 STORED AS SEQUENCEFILE
 AS
-SELECT PollutantCode, StationID, CAST(concat_ws('-',Year, Month,Day) AS date) MeasureDate,
+SELECT PollutantCode, StationID, CAST(concat_ws('-', Year, Month, Day) AS date) MeasureDate,
 CAST(regexp_replace(DayAverage,'\\s|-999','') AS int) DayAverage, CAST(regexp_replace(DayMin,'\\s|-999','')  AS int) DayMin, CAST(regexp_replace(DayMax,'\\s|-999','')  AS int) DayMax,
 ARRAY(
   CAST(regexp_replace(H01,'\\s|-999','') AS int), CAST(regexp_replace(H02,'\\s|-999','') AS int), CAST(regexp_replace(H03,'\\s|-999','') AS int),
@@ -138,6 +142,27 @@ FROM tempOzone2012 TABLESAMPLE(BUCKET 444 OUT OF 2000 ON rand());
 --Abnormal value?
 SELECT Min(DayAverage), Max(DayAverage), Min(DayMin), Max(DayMin), Min(DayMax), Max(DayMax) FROM tempOzone2012;
 
+/*
++------------+--------------+-------------+---------+---------+----------+----------------------------------------------------------------------------------------------------------------------------+--+
+| stationid  | measuredate  | dayaverage  | daymin  | daymax  | avgcalc  |                                                        hourreadings                                                        |
++------------+--------------+-------------+---------+---------+----------+----------------------------------------------------------------------------------------------------------------------------+--+
+| 50310      | 2012-04-28   | NULL        | NULL    | NULL    | NaN      | [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]  |
+| 54901      | 2012-06-24   | NULL        | NULL    | NULL    | NaN      | [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]  |
+| 90130      | 2012-09-30   | NULL        | NULL    | NULL    | NaN      | [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]  |
+| 105604     | 2012-05-29   | NULL        | NULL    | NULL    | NaN      | [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]  |
+| 129103     | 2012-04-14   | NULL        | NULL    | NULL    | NaN      | [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]  |
+| 129501     | 2012-05-10   | NULL        | NULL    | NULL    | NaN      | [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]  |
++------------+--------------+-------------+---------+---------+----------+----------------------------------------------------------------------------------------------------------------------------+--+
+6 rows selected (0.489 seconds)
+*/
+-- Records where there is no valid Ozone readings? all 24 daily reading are null
+-- In such a case, the calculation yeilds NaN
+SELECT StationID, MeasureDate, DayAverage, DayMin, DayMax, AvgArrayUDF(HourReadings) As AvgCalc, HourReadings
+FROM tempOzone2012 TABLESAMPLE(BUCKET 17 OUT OF 150 ON rand())
+WHERE AvgArrayUDF(HourReadings) == 'NaN';
+
+-- Results: 1399 records
+SELECT count(*) FROM tempOzone2012 WHERE AvgArrayUDF(HourReadings) == 'NaN';
 
 
 /*------------------------------------------------
@@ -190,6 +215,13 @@ DayMin, MinArrayUDF(HourReadings) MINCalc,
 DayMax, MaxArrayUDF(HourReadings) MAXCalc, HourReadings
 FROM tempOzone2012 TABLESAMPLE(BUCKET 654 OUT OF 1500 ON rand());
 
+-- For some StationsID?
+SELECT StationID, MeasureDate, DayAverage, CAST(AvgArrayUDF(HourReadings) AS int) AVGCalc,
+DayMin, MinArrayUDF(HourReadings) MINCalc,
+DayMax, MaxArrayUDF(HourReadings) MAXCalc, HourReadings
+FROM tempOzone2012
+WHERE StationID IN (64101, 90203);
+
 
 /*------------------------------------------------
 QUALITY CHECK #2: Data Quality Assessment
@@ -200,23 +232,52 @@ SELECT Min(DayAverage), Max(DayAverage), Min(DayMin), Max(DayMin), Min(DayMax), 
 CAST(Min(AvgArrayUDF(HourReadings)) AS int), CAST(Max(AvgArrayUDF(HourReadings)) AS int),
 Min(MinArrayUDF(HourReadings)), Max(MinArrayUDF(HourReadings)),
 Min(MaxArrayUDF(HourReadings)), Max(MaxArrayUDF(HourReadings))
-FROM Ozone2012;
+FROM tempOzone2012;
 
 --Any abnormal AvgArrayUDF(HourReadings) per city? Especially when value = -
 SELECT S.City, CAST(Min(AvgArrayUDF(O3.HourReadings)) AS int) AVGCalc
-FROM Ozone2012 O3
+FROM tempOzone2012 O3
 INNER JOIN NAPSStation S ON S.StationID = O3.StationID
 GROUP BY S.City
 ORDER BY City;
 
 --ZeroAvgCalcCount: 1438, TotalRowCount: 74065
-SELECT COUNT(*) AS ZeroAvgCalcCount FROM Ozone2012 WHERE CAST(AvgArrayUDF(HourReadings) AS int) = 0;
+SELECT COUNT(*) AS ZeroAvgCalcCount FROM tempOzone2012 WHERE CAST(AvgArrayUDF(HourReadings) AS int) = 0;
+
 --ZeroAvgCount: 5, TotalRowCount: 74065
-SELECT COUNT(*) AS ZeroAvgCount FROM Ozone2012 WHERE DayAverage = 0;
+SELECT COUNT(*) AS ZeroAvgCount FROM tempOzone2012 WHERE DayAverage = 0;
 
 
 
 
+/*--------------------------------------------------------
+  FINAL Table (Managed)
+
+hive> dfs -ls /apps/hive/warehouse/ozone2012;
+-rw-r--r--   3 root hdfs    3757290 2014-04-17 18:53 /apps/hive/warehouse/ozone2012/000000_0
+--------------------------------------------------------*/
+
+-- DROP TABLE IF EXISTS Ozone2012;
+CREATE TABLE Ozone2012
+COMMENT 'Ozone Measures 2012 (Canadian National Air Pollution Surveillance)'
+STORED AS SEQUENCEFILE
+TBLPROPERTIES ('CreateBy'='Tri', 'CreateDate'='2014-04-17', 'Project'='Canada Air Quality')
+AS
+SELECT PollutantCode, StationID, MeasureDate,
+DayAverage, round(AvgArrayUDF(HourReadings), 2) AVGCalc,
+DayMin, MinArrayUDF(HourReadings) MINCalc, DayMax, MaxArrayUDF(HourReadings) MAXCalc
+FROM tempOzone2012;
+
+-- Check for some Stations
+SELECT * FROM Ozone2012 WHERE StationID IN (64101, 90203) AND AVGCalc == 'NaN';
+
+-- Records where there is no valid Ozone readings? all 24 daily reading are null
+-- In such a case, the calculation of AVGCalc yeilded NaN
+-- Results: 1399 records having AVGCalc == 'NaN'
+SELECT count(*) FROM Ozone2012 WHERE AVGCalc == 'NaN';
+
+
+/*
 ---------------------------------------------------------
 -- PROOF OF BUG: STEP 1/2:
 -- Here nothing wrong with the results of AvgArrayUDF(OZ.HourReadings)
@@ -244,26 +305,8 @@ FROM tempOzone2012 OZ
 INNER JOIN NAPSStation S ON S.StationID = OZ.StationID
 WHERE S.City = 'HAMILTON'
 GROUP BY S.ProvinceName, S.City;
+*/
 
-
-
-/*--------------------------------------------------------
-  FINAL Table (Managed)
-
-hive> dfs -ls /apps/hive/warehouse/ozone2012;
--rw-r--r--   3 root hdfs    3757290 2014-04-17 18:53 /apps/hive/warehouse/ozone2012/000000_0
---------------------------------------------------------*/
-
--- DROP TABLE IF EXISTS Ozone2012;
-CREATE TABLE Ozone2012
-COMMENT 'Ozone Measures 2012 (Canadian National Air Pollution Surveillance)'
-STORED AS SEQUENCEFILE
-TBLPROPERTIES ('CreateBy'='Tri', 'CreateDate'='2014-04-17', 'Project'='Canada Air Quality')
-AS
-SELECT PollutantCode, StationID, MeasureDate,
-DayAverage, round(AvgArrayUDF(HourReadings), 2) AVGCalc,
-DayMin, MinArrayUDF(HourReadings) MINCalc, DayMax, MaxArrayUDF(HourReadings) MAXCalc
-FROM tempOzone2012;
 
 
 --(end)--

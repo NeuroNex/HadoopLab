@@ -4,12 +4,8 @@ Session April 2014 - "Discovery of Hadoop Under a Relational Lens Scope"
 
 Parse NAPS Station Metadata, this table will give us the location of the measures via the StationID
 
-Data Preparation:
-   $ scp /home/tri/Documents/HadoopLab/AirQualityAnalysis/src/main/resources/Stations_v28012014.csv root@hdpsbhv:/root/HadoopExo/
-   # hdfs dfs -mkdir -p /user/Tri/AirAnalysis/NAPSStation/
-   # hdfs dfs -copyFromLocal -f /root/HadoopExo/Stations_v28012014.csv /user/Tri/AirAnalysis/NAPSStation/
-
 2014-04-17 - Tri Nguyen
+2015-07-011 Update with Beeline output
 ==========================================================*/
 
 
@@ -25,51 +21,99 @@ ProvinceName string, StreetAddr string, City string, Country string, FSA string,
 Timezone float, Latitude float, Longitude float, ElevationMeter int)
 COMMENT 'Canadian NAPS Stations (National Air Pollution Surveillance)'
 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
-LOCATION '/user/Tri/AirAnalysis/NAPSStation'
-TBLPROPERTIES ('CreateBy'='Tri', 'CreateDate'='2014-04-17', 'Project'='Canada Air Quality');
+LOCATION '/user/tri/AirAnalysis/NAPSStation'
+TBLPROPERTIES ('CreateBy'='Tri', 'Project'='Canada Air Quality');
 
 --Rename column
 --ALTER TABLE NAPSStation CHANGE ElevationMater ElevationMeter int;
 
---QUERY. RowCount = 710
+/*
++---------------+--+
+| stationcount  |
++---------------+--+
+| 710           |
++---------------+--+
+1 row selected (8.747 seconds)
+*/
 SET hive.cli.print.header=true;
-SELECT COUNT(*) AS RowCount FROM NAPSStation;
+SELECT COUNT(*) AS StationCount FROM NAPSStation;
 
 /*
-stationid	stationname	provincename	city	postalcode	latitude	longitude	elevationmeter
-10102	WATER STREET POST OFFICE	NEWFOUNDLAND AND LABRADOR	ST. JOHN'S	A1C 1C4	47.56	-52.71139	17
-10400	CENTRAL NEWFOUNDLAND	NEWFOUNDLAND AND LABRADOR	GANDER	A2B 1C6	48.94287	-54.55753	125
-30114	MT ST VINCENT UNIVERSITY	NOVA SCOTIA	HALIFAX	B3M 3J8	44.67111	-63.64389	12
-40209	SAINT JOHN REGIONAL OFFICE	NEW BRUNSWICK	SAINT JOHN	E2J 3B8	45.28028	-66.05611	41
-50110	PARC-PILON	QUEBEC	MONTREAL	H1H 4B5	45.5945	-73.6415	21
-50116	VERDUN	QUEBEC	MONTREAL	H4G 1H8	45.47167	-73.57222	21
-50123	55 AVENUE LILAS -  DORVAL	QUEBEC	MONTREAL	H9S 3L8	45.43917	-73.73111	30
-50701	DEQUEN	QUEBEC	SEPT-�LES		50.20972	-66.38583	3
-50902	PARC BERTHIER	QUEBEC	SAGUENAY	G7S 2J6	48.43417	-71.185	93
-55001	MONT SAINT-MICHEL	QUEBEC	FERME NEUVE		46.76861	-75.43194	256
-60402	ONTARIO SCIENCE CENTRE	ONTARIO	TORONTO	M3C 1T3	43.715	-79.34111	105
-60425	QUEEN & UNIVERSITY	ONTARIO	TORONTO		43.65028	-79.38694	90
-60433	BAY & WELLESLEY _Toronto Downtown	Ontario	TORONTO		43.66417	-79.38722	107
-60507	HUGHSON & HUNTER	ONTARIO	HAMILTON		43.25361	-79.86944	100
-60514	NASH RD. & KENTLEY DR.	ONTARIO	HAMILTON		43.23333	-79.76667	84
-60805	521 MEMORIAL AVENUE	ONTARIO	THUNDER BAY	P7B 3Y6	48.42087	-89.23855	197
-60902	372 DUNDAS	ONTARIO	LONDON	N6B 1V7	42.98639	-81.24083	247
-61001	156 VICTORIA STREET	ONTARIO	SARNIA		42.97306	-82.40611	183
-61104	10 HOSPITAL DRIVE _Peterborough_	ONTARIO	PETERBOROUGH	K9J 8M1	44.30192	-78.34622	236
-61402	324 GRAND RIVER AVE. _Brantford_	ONTARIO	BRANTFORD		43.13861	-80.29264	210
-70104	UNION STOCK YARDS	MANITOBA	WINNIPEG	R2J 0K4	49.88	-97.08556	226
-80110	2505 11th. AVENUE	SASKATCHEWAN	REGINA	S4P 0K6	50.45017	-104.61722	585
-90203	407-31 AVENUE N.W.	ALBERTA	CALGARY		51.08048	-114.06784	1082
-90225	PALLISER DR & OAKWOOD SW	ALBERTA	CALGARY		50.96944	-114.12472	1104
-91901	CAROLINE	ALBERTA	CAROLINE		51.95	-114.7	1140
-92701	CROSSFIELD-CARSTAIRS _PORTABLE_	ALBERTA	Airdrie	T4B 1R1	51.2924	-114.0028	1099
-93501	LIBERTY PARK	ALBERTA	Pine Lake		52.1249	-113.4921	884
-100113	ANNACIS ISLAND  DELTA	BRITISH COLUMBIA	GVRD - DELTA		49.16444	-122.93	29
-100401	FEDERAL BUILDING	BRITISH COLUMBIA	KAMLOOPS		50.6747	-120.334	381
-104801	DUNCAN DEYKIN AVENUE	BRITISH COLUMBIA	DUNCAN	V9L 5R2	48.80278	-123.645	62
++------------+---------------------------------+-------------------+------------------------+-------------+---------------------+----------------------+-----------------+--+
+| stationid  |           stationname           |   provincename    |          city          | postalcode  |      latitude       |      longitude       | elevationmeter  |
++------------+---------------------------------+-------------------+------------------------+-------------+---------------------+----------------------+-----------------+--+
+| 40207      | WEST SIDE                       | NEW BRUNSWICK     | SAINT JOHN             | E2M 2L7     | 45.252769470214844  | -66.08003234863281   | 59              |
+| 40901      | HUNTSMAN MARINE SCIENCES CTR.   | NEW BRUNSWICK     | ST. ANDREWS            | E0G 2X0     | 45.081077575683594  | -67.07466125488281   | 25              |
+| 50603      | ?COLE MURDOCK                   | QUEBEC            | ROUYN-NORANDA          | J9X 1C6     | 48.24555969238281   | -79.01499938964844   | 293             |
+| 51001      | LA FL?CHE                       | QUEBEC            | SOREL-TRACY            |             | 46.01750183105469   | -73.15888977050781   | 11              |
+| 53301      | DESCHAMBAULT-RAMCO              | QUEBEC            | DESCHAMBAULT           | G0A 1S0     | 46.682220458984375  | -71.96778106689453   | 48              |
+| 54301      | VILLEROY                        | QUEBEC            | STE-FRAN?OISE          |             | 46.43333053588867   | -71.9333267211914    | 103             |
+| 60510      | STRATHEARN                      | ONTARIO           | HAMILTON               |             | 43.26388931274414   | -79.78556060791016   | 74              |
+| 60704      | QUEEN & ELGIN                   | ONTARIO           | SAULT STE. MARIE       |             | 46.511940002441406  | -84.33332824707031   | 183             |
+| 61802      | EXHIBITION PARK ARENA _Guelph_  | ONTARIO           | GUELPH                 | N1H 1R3     | 43.55160903930664   | -80.26416778564453   | 335             |
+| 65601      | ESSEX SITE                      | ONTARIO           | ESSEX                  | N8M 1Y6     | 42.15999984741211   | -82.83332824707031   | 193             |
+| 80211      | CORMAN PARK                     | SASKATCHEWAN      | SASKATOON              | S7K 1X5     | 52.136131286621094  | -106.66293334960938  | 483             |
+| 80801      | PENSE                           | SASKATCHEWAN      | PENSE                  |             | 50.348609924316406  | -104.98332977294922  | 581             |
+| 90203      | 407-31 AVENUE N.W.              | ALBERTA           | CALGARY                |             | 51.08047866821289   | -114.06784057617188  | 1082            |
+| 90502      | LETHBRIDGE                      | ALBERTA           | LEthBRIDGE             |             | 49.716209411621094  | -112.80059814453125  | 918             |
+| 93601      | LIMESTONE MOUNTAIN _RAVEN_      | ALBERTA           | Rocky Mountain House   |             | 51.930450439453125  | -115.42796325683594  | 2106            |
+| 100112     | ROBSON SQUARE                   | BRITISH COLUMBIA  | METRO VAN - VANCOUVER  |             | 49.28221893310547   | -123.1211929321289   | 33              |
+| 100113     | ANNACIS ISLAND  DELTA           | BRITISH COLUMBIA  | GVRD - DELTA           |             | 49.1644401550293    | -122.93000030517578  | 29              |
+| 100115     | NEWTON ELEM. SCH.  SURREY       | BRITISH COLUMBIA  | GVRD - SURREY          | V3W 3C5     | 49.15082931518555   | -122.85166931152344  | 63              |
+| 100135     | DOUGLAS COLLEGE                 | BRITISH COLUMBIA  | METRO VAN - COQUITLAM  | V3B 7X3     | 49.288055419921875  | -122.79138946533203  | 47              |
+| 101001     | ABBOTSFORD AIRPORT              | BRITISH COLUMBIA  | ABBOTSFORD             |             | 49.03055953979492   | -122.37610626220703  | 61              |
+| 101301     | LANGLEY CENTRAL                 | BRITISH COLUMBIA  | METRO VAN-LANGLEY      | V2Z 2P3     | 49.095558166503906  | -122.56694030761719  | 89              |
+| 101803     | Creston Piper Farms             | BRITISH COLUMBIA  | CRESTON                |             | 49.011940002441406  | -116.53333282470703  | 539             |
++------------+---------------------------------+-------------------+------------------------+-------------+---------------------+----------------------+-----------------+--+
+22 rows selected (0.531 seconds)
 */
---710 total rows, 20 buckets -> roughly 35 records/bucket
+--710 total rows, 30 buckets -> roughly 23 records/bucket
 SELECT StationID, StationName, ProvinceName, City, PostalCode, Latitude, Longitude, ElevationMeter
-FROM NAPSStation TABLESAMPLE(BUCKET 9 OUT OF 20 ON rand());
+FROM NAPSStation TABLESAMPLE(BUCKET 23 OUT OF 30 ON rand());
+
+
+/*
++------------+--------------------------------------+-------------------+-----------+-------------+--+
+| stationid  |             stationname              |   provincename    |   city    | postalcode  |
++------------+--------------------------------------+-------------------+-----------+-------------+--+
+| 64101      | ALGOMA                               | ONTARIO           | ALGOMA    |             |
+| 90203      | 407-31 AVENUE N.W.                   | ALBERTA           | CALGARY   |             |
+| 90228      | CALGARY CENTRAL-2                    | ALBERTA           | CALGARY   | T2P-0Y8     |
+| 90227      | CALGARY CENTRAL                      | ALBERTA           | CALGARY   |             |
+| 90226      | SHEPPARD & 84 AVE S.E.               | ALBERTA           | CALGARY   |             |
+| 90225      | PALLISER DR & OAKWOOD SW             | ALBERTA           | CALGARY   |             |
+| 90224      | OGDENDALE & 71 AVE S.E.              | ALBERTA           | CALGARY   |             |
+| 90223      | 11 ST. & 38 AVE. S.E.                | ALBERTA           | CALGARY   |             |
+| 90222      | CALGARY NORthWEST                    | ALBERTA           | CALGARY   |             |
+| 90221      | DALHOUSIE DR & DALHAM DR             | ALBERTA           | CALGARY   |             |
+| 90220      | 26 AVE. & 4 STREET N.W.              | ALBERTA           | CALGARY   |             |
+| 90219      | 620-7th AVENUE S.W.                  | ALBERTA           | CALGARY   |             |
+| 90218      | CALGARY EAST                         | ALBERTA           | CALGARY   |             |
+| 90216      | GLENMORE TRAIL & 18 ST.              | ALBERTA           | CALGARY   |             |
+| 90204      | 316-7th AVENUE                       | ALBERTA           | CALGARY   |             |
+| 100301     | POLICE STATION                       | BRITISH COLUMBIA  | VICTORIA  | V8W 1R7     |
+| 100316     | Langford Lakewood Elementary School  | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100315     | Victoria Christopher Point           | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100314     | SAANICH STELLYS CROSS ROAD           | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100313     | LANGFORD DOGWOOD SCHOOL              | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100312     | ESQUIMALT GRAVING DOCK               | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100311     | DND HOSPITAL AIR STATION             | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100310     | BRAEFOOT                             | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100309     | KEATING                              | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100308     | COLWOOD CITY HALL                    | BRITISH COLUMBIA  | VICTORIA  | V9C 1R1     |
+| 100307     | ROYAL ROADS UNIVERSITY               | BRITISH COLUMBIA  | VICTORIA  | V9B 5Y2     |
+| 100306     | CAMOSUN COLLEGE                      | BRITISH COLUMBIA  | VICTORIA  |             |
+| 100305     | OAK BAY REC. CENTRE                  | BRITISH COLUMBIA  | VICTORIA  | V8R 5E6     |
+| 100304     | VICTORIA TOPAZ                       | BRITISH COLUMBIA  | VICTORIA  | V8T 2M2     |
+| 100303     | 1250 QUADRA ST.                      | BRITISH COLUMBIA  | VICTORIA  | V8W 2K7     |
+| 100302     | 1106 COOK ST.                        | BRITISH COLUMBIA  | VICTORIA  | V8V 3Z9     |
+| 105001     | MEADOW PARK                          | BRITISH COLUMBIA  | WHISTLER  |             |
++------------+--------------------------------------+-------------------+-----------+-------------+--+
+32 rows selected (9.166 seconds)
+*/
+SELECT StationID, StationName, ProvinceName, City, PostalCode
+FROM NAPSStation
+WHERE City IN ('ALGOMA', 'CALGARY', 'VICTORIA', 'WHISTLER')
+ORDER BY City;
 
 --(end)--
