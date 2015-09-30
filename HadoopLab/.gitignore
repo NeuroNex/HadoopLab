@@ -1,0 +1,30 @@
+#--------------------------------------------------------
+# Git ignore files and folders
+# https://help.github.com/articles/ignoring-files
+#--------------------------------------------------------
+
+#---Standard Ignore for Java files
+*.class
+*.jar
+*.war
+*.ear
+bin/
+
+#---Ignore IntelliJ IDEA files (https://intellij-support.jetbrains.com/entries/23393067)
+# User-specific stuff:
+.iws
+.idea/tasks.xml
+.idea/workspace.xml
+.idea/dictionaries
+.idea/libraries
+
+
+#---Other temporaty files
+.~*
+~*
+velocity.log
+
+
+#--(end)--
+
+

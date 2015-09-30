@@ -1,20 +1,7 @@
-## OVERVIEW 
-Introduction to Hadoop Development with a comparison to a traditional design using relational DB.
-This tutorial has been presented in:
-
-- Toronto SQL Server User Group, Session of April 2014
-- Toronto Hadoop User Group, Session of May 2014
-- Toronto Apache Spark, Session of Sept 2015
-
-2014-05-30 - Tri Nguyen, released to GitHub
-2015-07-12 - add solutions in R and Spark
-2015-09-26 - add solution using SparkSQL, update documentation
-
-
 1. THE PROBLEM TO SOLVE
 =======================
 ### Source Canada Public Data:
-National Air Pollution Surveillance Program (NAPS) <http://maps-cartes.ec.gc.ca/rnspa-naps/data.aspx?lang=en>
+[National Air Pollution Surveillance Program (NAPS)](http://maps-cartes.ec.gc.ca/rnspa-naps/data.aspx?lang=en)
 
 ### NAPS Stations (100K, 709 records)
 ```
@@ -170,7 +157,7 @@ the support of the Java MapReduce solution.
 
 4. TEST RESULTS
 ===============
-[Benchmark Results](./README.md)
+[Benchmark Results](../README.md)
 
 
 5. PROJECT DIRECTORIES

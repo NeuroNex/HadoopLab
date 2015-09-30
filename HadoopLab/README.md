@@ -10,7 +10,11 @@ In this project, we solve a real world problem "What are the most polluted citie
 5. R
 6. Spark
 
-[Project Description + Technical Details](./AirQualityAnalysis_README.md)
+[Project Description + Technical Details](./AirQualityAnalysis/README.md)
+
+2014-05-30 - Tri Nguyen, released to GitHub<br/>
+2015-07-12 - add solutions in R and Spark<br/>
+2015-09-26 - add solution using SparkSQL, update documentation<br/>
 
 
 ## Benchmark Results
@@ -22,6 +26,7 @@ In this project, we solve a real world problem "What are the most polluted citie
 <br/><br/>
 
 (Benchmark updated: **2015-07-12**)
+
 |                |SQL2012 R2 | Hive TEZ |   Pig     | Java MR |    R     | Spark |
 |                |    HW1    |    HW2   |   HW2     |   HW2   |   HW3    |       |
 |----------------|-----------|----------|-----------|---------|----------|-------|
@@ -29,7 +34,6 @@ In this project, we solve a real world problem "What are the most polluted citie
 |                |           |          |           |         |          | 16 secs, HDFS on HDP, HW2  |
 |----------------|-----------|----------|-----------|---------|----------|-------|
 | Design Time    |  4 h      |   6 h    |   2 h     | 30 h    |  4 h     | 8 h   |
-|----------------|-----------|----------|-----------|---------|----------|-------|
 
 <br/><br/>
 

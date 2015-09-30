@@ -17,6 +17,8 @@
 
 library(data.table)
 library(magrittr)
+library(readr)
+library(stringi)
 
 startProcTime <- proc.time()
 
@@ -71,9 +73,9 @@ dtOzone <- dtOzone[
 message("==========| Calc Avg, Min, Max on H01..H24 columns |==========")
 dtOzone[, `:=`
   (AvgCalc = mean(c(H01,H02,H03,H04,H05,H06,H07,H08,H09,H10,H11,H12,H13,H14,H15,H16,H17,H18,H19,H20,H21,H22,H23,H24), na.rm=TRUE),
-	MinCalc = min (c(H01,H02,H03,H04,H05,H06,H07,H08,H09,H10,H11,H12,H13,H14,H15,H16,H17,H18,H19,H20,H21,H22,H23,H24), na.rm=TRUE),
-	MaxCalc = max (c(H01,H02,H03,H04,H05,H06,H07,H08,H09,H10,H11,H12,H13,H14,H15,H16,H17,H18,H19,H20,H21,H22,H23,H24), na.rm=TRUE)),
-	by=1:nrow(dtOzone)] 
+   MinCalc = min (c(H01,H02,H03,H04,H05,H06,H07,H08,H09,H10,H11,H12,H13,H14,H15,H16,H17,H18,H19,H20,H21,H22,H23,H24), na.rm=TRUE),
+   MaxCalc = max (c(H01,H02,H03,H04,H05,H06,H07,H08,H09,H10,H11,H12,H13,H14,H15,H16,H17,H18,H19,H20,H21,H22,H23,H24), na.rm=TRUE)),
+   by=1:nrow(dtOzone)]
 
 message("==========| Avg Ozone by City |==========")
 setkey(dtOzone   , StationID)
