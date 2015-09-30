@@ -28,12 +28,11 @@ In this project, we solve a real world problem "What are the most polluted citie
 (Benchmark updated: **2015-07-12**)
 
 |                |SQL2012 R2 | Hive TEZ |   Pig     | Java MR |    R     | Spark |
-|                |    HW1    |    HW2   |   HW2     |   HW2   |   HW3    |       |
 |----------------|-----------|----------|-----------|---------|----------|-------|
 | Exec Time      |  6 secs   | 60 secs  | 3'41 secs | 70 secs |  2 secs  |  9 secs, local, HW3|
 |                |           |          |           |         |          | 16 secs, HDFS on HDP, HW2  |
-|----------------|-----------|----------|-----------|---------|----------|-------|
 | Design Time    |  4 h      |   6 h    |   2 h     | 30 h    |  4 h     | 8 h   |
+| Hardware specs |  HW1      |  HW2     |   HW2     |   HW2   |   HW3    |  HW3  |
 
 <br/><br/>
 
